@@ -1,0 +1,99 @@
+# .gitignore
+
+# -----------------------------------------------------------------------------
+# Entornos Virtuales
+# -----------------------------------------------------------------------------
+# Ignora el directorio del entorno virtual. La barra al principio asegura que
+# solo se ignore si está en la raíz del proyecto.
+/.venv/
+/venv/
+/env/
+/ENV/
+
+# -----------------------------------------------------------------------------
+# Cache de Python y Herramientas de Desarrollo
+# -----------------------------------------------------------------------------
+# Archivos de bytecode y optimizados de Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Cache de herramientas
+/.pytest_cache/
+/.mypy_cache/
+/.ruff_cache/
+
+# Archivos de Cobertura de Pruebas
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+report.xml
+quality-report.json
+mypy-out.json
+static-analysis-report.json
+
+# -----------------------------------------------------------------------------
+# Archivos de IDE y Editores de Código
+# -----------------------------------------------------------------------------
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# -----------------------------------------------------------------------------
+# Artefactos de Construcción y Distribución
+# -----------------------------------------------------------------------------
+# Estos directorios son generados por herramientas como `uv build` o `setuptools`
+build/
+dist/
+*.egg-info/
+sdist/
+wheelhouse/
+*.tar.gz
+*.whl
+
+# -----------------------------------------------------------------------------
+# Archivos de Configuración Local y Secretos
+# -----------------------------------------------------------------------------
+# Ignora todos los archivos .env que contienen secretos locales
+.env
+.env.*
+
+# EXCEPCIÓN: No ignores el archivo de ejemplo, ya que debe estar en el repo
+!.env.example
+
+# -----------------------------------------------------------------------------
+# Documentación Generada
+# -----------------------------------------------------------------------------
+# El directorio donde Sphinx guarda los archivos HTML/PDF generados
+docs/_build/
+
+# -----------------------------------------------------------------------------
+# Jupyter Notebook
+# -----------------------------------------------------------------------------
+.ipynb_checkpoints
+profile_default/
+ipython_config.py
+
+# -----------------------------------------------------------------------------
+# Archivos de Sistema Operativo
+# -----------------------------------------------------------------------------
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+ehthumbs_vista.db
+*.[Dd]esktop.ini
+
+# -----------------------------------------------------------------------------
+# Logs y Bases de Datos locales
+# -----------------------------------------------------------------------------
+*.log
+*.log.*
+*.sql
+*.sqlite3
