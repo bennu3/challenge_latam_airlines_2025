@@ -71,3 +71,13 @@ Con métricas similares, se adoptó Logistic Regression con `class_weight="balan
 3. **Seguridad**  
    - Se usa Artifact Registry como repositorio de imágenes y Workload Identity Federation (pool `github-pool`, provider `github-provider`) para evitar claves JSON en CD.
 
+## CI/CD
+
+- **CI (`.github/workflows/ci.yml`)**  
+  - Se ejecuta en `push` a `develop` y `feat/**`, y en PR hacia `develop`.  
+  - Pasos: `pip install -r requirements.txt -r requirements-test.txt ruff`, `ruff check .`, `make model-test`, `make api-test`.
+- **CD (`.github/workflows/cd.yml`)**  
+  - Solo se dispara en `push` a `main`.  
+  - Usa `google-github-actions/auth@v2` con WIF (`GCP_WORKLOAD_IDENTITY_PROVIDER`, `GCP_SERVICE_ACCOUNT`).  
+  - Ejecuta `gcloud builds submit` para publicar la imagen en Artifact Registry y `gcloud run deploy` hacia `challenge-api`.
+- **Secretos requeridos**: `GCP_PROJECT_ID`, `GCP_REGION`, `GCP_RUN_SERVICE`, `GCP_ARTIFACT_REPO`, `GCP_WORKLOAD_IDENTITY_PROVIDER`, `GCP_SERVICE_ACCOUNT`.
