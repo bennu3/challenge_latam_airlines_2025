@@ -23,12 +23,34 @@ def _get_min_diff(data_row):
 - Se migra one-hot encoding y selección de 10 features clave.
 
 ### Pasos de la migración
-1. **Se corrige bug en la llamada de Union():** Se cambia los `()` por `[]` apra corregir el error de `Call expression not allowed in type expression`
-2. **Extracción del preprocesamiento:**  
-   - Se implementó el helper `_get_min_diff` para replicar el cálculo de la diferencia de minutos entre `Fecha-O` y `Fecha-I`.  
-   - `preprocess` aplica `pd.get_dummies` sobre `OPERA`, `TIPOVUELO` y `MES` y garantiza que las 10 columnas más relevantes (de no existir se asigna el valor cero).  
-3. **Entrenamiento reproducible (`fit`):**  
-   - Se entrena una única instancia de `LogisticRegression`, almacenada en `self._model`, dejando el modelo listo para ser consumido por la API.
+1. **Corrección de tipos:** se reemplazó `Union()` por `Union[]` para satisfacer los type-hints de Python 3.12.
+2. **Preprocesamiento alineado al notebook:**  
+   - `_get_min_diff` replica el cálculo de minutos entre `Fecha-O` y `Fecha-I`.  
+   - `preprocess` opera sobre una copia del DataFrame, genera dummies de `OPERA`, `TIPOVUELO`, `MES` y garantiza las 10 columnas top (rellena con 0 si faltan).  
+   - El target es genérico: si `target_column` existe se devuelve si no existe se deriva (solo cuando hay timestamps) respetando el nombre solicitado.
+3. **Entrenamiento balanceado (`fit`):**  
+   - Se utiliza `LogisticRegression(class_weight="balanced")`, replicando la recomendación del notebook (top 10 features + balanceo) sin cálculos manuales para evitar errores.
 4. **Inferencia segura (`predict`):**  
-   - Antes de predecir se verifica que el modelo haya sido entrenado. En caso contrario se reutiliza el último batch cacheado para ejecutar `fit` de manera lazzy.  
-   - Las predicciones se devuelven como lista de enteros, respetando el contrato del endpoint `/predict`.
+   - `predict` exige haber llamado `fit` previamente y arroja un `ValueError` descriptivo si no hay modelo entrenado.
+5. **Pruebas de modelo:**  
+   - `test_model_predict` se actualizó para reflejar el flujo real (`preprocess -> fit -> predict`).  
+
+### Selección del modelo
+
+Durante la migración se revisaron los dos candidatos finales del notebook (XGBoost y Logistic Regression) con top 10 features y balanceo. Las métricas fueron equivalentes, por lo que se priorizó Logistic Regression por motivos operativos:
+
+1. **Dependencias livianas:** 
+   - Viene en scikit-learn.
+   - XGBoost es necesario agregar una librería.
+2. **Consumo de recursos:** 
+   - LR entrena e infiere en segundos (celdas 53 tarda 0.2 segundos). 
+   - XGBoost tarda más y consume más CPU/RAM (celdas 47 tarda 0,7 segndos), algo crítico para el ambiente donde se va a realizar el deploy (e.g. Cloud Run).
+
+Con métricas similares, se adoptó Logistic Regression con `class_weight="balanced"` para minimizar complejidad operativa sin sacrificar calidad.
+
+## `api.py`: exposición del modelo
+1. **Logging definido para mejor manejo de errores:** se agrega el import de logging para poder manejar los erroes.
+2. **Carga determinística de datos:** `DelayService` ahora lee `data.csv` mediante un helper que fija `dtype` para `Vlo-I` y `Vlo-O` y usa `low_memory=False`.
+3. **Entrenamiento con logging:** `ensure_model` registra el resultado del entrenamiento y propaga las excepciones para que el `lifespan`/endpoint puedan responder con errores claros.
+4. **Validaciones de request:** `FlightRequest` valida que la lista de vuelos no venga vacía, en conjunto con las validaciones previas de `OPERA`, `TIPOVUELO` y `MES`.
+5. **Manejo de errores de inferencia:** `/predict` mantiene las respuestas HTTP 400 para problemas de validación y 500 para fallas inesperadas, respaldado por logging que facilita el troubleshooting.
