@@ -48,9 +48,26 @@ Durante la migración se revisaron los dos candidatos finales del notebook (XGBo
 
 Con métricas similares, se adoptó Logistic Regression con `class_weight="balanced"` para minimizar complejidad operativa sin sacrificar calidad.
 
+## Cloud Environment
+
+1. **Proveedor**: se eligió GCP usando Cloud Run por su naturaleza serverless y porque expone directamente un endpoint público.
+2. **Seguridad**: se configuró Workload Identity Federation entre GitHub Actions y GCP para autenticarse sin descargar claves JSON de la Service Account.
+3. **Artefactos**: las imágenes Docker se almacenan en Artifact Registry, para en despliegues manuales como en CI/CD.
+
 ## `api.py`: exposición del modelo
 1. **Logging definido para mejor manejo de errores:** se agrega el import de logging para poder manejar los erroes.
 2. **Carga determinística de datos:** `DelayService` ahora lee `data.csv` mediante un helper que fija `dtype` para `Vlo-I` y `Vlo-O` y usa `low_memory=False`.
 3. **Entrenamiento con logging:** `ensure_model` registra el resultado del entrenamiento y propaga las excepciones para que el `lifespan`/endpoint puedan responder con errores claros.
 4. **Validaciones de request:** `FlightRequest` valida que la lista de vuelos no venga vacía, en conjunto con las validaciones previas de `OPERA`, `TIPOVUELO` y `MES`.
 5. **Manejo de errores de inferencia:** `/predict` mantiene las respuestas HTTP 400 para problemas de validación y 500 para fallas inesperadas, respaldado por logging que facilita el troubleshooting.
+
+## Dockerfile y despliegue en GCP
+
+1. **Dockerfile**  
+   - Basado en `python:3.12-slim`, solamente instala `requirements.txt`, copia el paquete `challenge` y expone Uvicorn en `0.0.0.0:8080`.
+2. **Cloud Run**  
+   - Servicio productivo: `challenge-api` en región configurada.  
+   - La URL resultante se replica en el `Makefile` para `make stress-test`.g
+3. **Seguridad**  
+   - Se usa Artifact Registry como repositorio de imágenes y Workload Identity Federation (pool `github-pool`, provider `github-provider`) para evitar claves JSON en CD.
+
