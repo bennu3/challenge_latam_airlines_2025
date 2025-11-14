@@ -28,9 +28,7 @@ class DelayService:
         self.logger = logging.getLogger(__name__)
 
     def _load_dataset(self) -> pd.DataFrame:
-        dtype = {
-            "Vlo-I": "string", "Vlo-O": "string"
-        }
+        dtype = {"Vlo-I": "string", "Vlo-O": "string"}
         return pd.read_csv(self._dataset_path, dtype=dtype, low_memory=False)
 
     def ensure_model(self) -> DelayModel:
@@ -83,7 +81,7 @@ class Flight(BaseModel):
     TIPOVUELO: str
     MES: int
 
-    @validator('MES')
+    @validator("MES")
     def validate_mes(cls, number):
         if number < 1 or number > 12:
             raise ValueError("MES debe ser entre 1 y 12")
@@ -98,15 +96,34 @@ class Flight(BaseModel):
     @validator("OPERA")
     def validate_opera(cls, operator):
         valid_airlines = [
-            'Aerolineas Argentinas', 'Aeromexico', 'Air Canada', 'Air France',
-            'Alitalia', 'American Airlines', 'Austral', 'Avianca', 'British Airways',
-            'Copa Air', 'Delta Air', 'Gol Trans', 'Grupo LATAM', 'Iberia',
-            'JetSmart SPA', 'K.L.M.', 'Lacsa', 'Latin American Wings',
-            'Oceanair Linhas Aereas', 'Plus Ultra Lineas Aereas', 'Qantas Airways',
-            'Sky Airline', 'United Airlines'
+            "Aerolineas Argentinas",
+            "Aeromexico",
+            "Air Canada",
+            "Air France",
+            "Alitalia",
+            "American Airlines",
+            "Austral",
+            "Avianca",
+            "British Airways",
+            "Copa Air",
+            "Delta Air",
+            "Gol Trans",
+            "Grupo LATAM",
+            "Iberia",
+            "JetSmart SPA",
+            "K.L.M.",
+            "Lacsa",
+            "Latin American Wings",
+            "Oceanair Linhas Aereas",
+            "Plus Ultra Lineas Aereas",
+            "Qantas Airways",
+            "Sky Airline",
+            "United Airlines",
         ]
         if operator not in valid_airlines:
-            raise ValueError(f'OPERA debe ser alguno de los siguientes {",".join(valid_airlines)}')
+            raise ValueError(
+                f"OPERA debe ser alguno de los siguientes {','.join(valid_airlines)}"
+            )
         return operator
 
 
@@ -119,15 +136,14 @@ class FlightRequest(BaseModel):
             raise ValueError("Debe proporcionar al menos un vuelo")
         return flights
 
+
 class PredictionResponse(BaseModel):
     predict: List[int]
 
 
 @app.get("/health", status_code=200)
 async def get_health() -> dict:
-    return {
-        "status": "OK"
-    }
+    return {"status": "OK"}
 
 
 @app.exception_handler(RequestValidationError)
@@ -135,14 +151,13 @@ async def validation_exception_handler(request, exc):
     """
     Ensure FastAPI surfaces validation errors as HTTP 400 to match the spec/tests.
     """
-    return JSONResponse(
-        status_code=400,
-        content={"detail": exc.errors()}
-    )
+    return JSONResponse(status_code=400, content={"detail": exc.errors()})
 
 
 @app.post("/predict", status_code=200)
-async def post_predict(request: FlightRequest, http_request: Request) -> PredictionResponse:
+async def post_predict(
+    request: FlightRequest, http_request: Request
+) -> PredictionResponse:
     """
     Predecir delays para una lista de vuelos.
 
