@@ -34,6 +34,9 @@ class DelayModel:
             or
             pd.DataFrame: features.
         """
+
+        data = data.copy()
+
         top_10_features = [
             "OPERA_Latin American Wings", 
             "MES_7",
@@ -59,23 +62,17 @@ class DelayModel:
         
         features = features[top_10_features]
 
-        self._last_features = features.copy()
-        self._last_raw_data = data
 
         if target_column:
-            if target_column not in data.columns:
+            if target_column in data.columns:
+                target = data[[target_column]].copy()
+            else:
+                if 'Fecha-O' not in data.columns or 'Fecha-I' not in data.columns:
+                    raise ValueError("Se requieren columnas Fecha-O y Fecha-I para calcular el target")
                 data['min_diff'] = data.apply(self._get_min_diff, axis=1)
-                data['delay'] = np.where(data['min_diff'] > 15, 1, 0)
-            target = data[[target_column]]
-
-            self._last_target = target.copy()
+                data[target_column] = np.where(data['min_diff'] > 15, 1, 0)
+                target = data[[target_column]].copy()
             return features, target
-
-        if 'delay' not in data.columns and 'Fecha-O' in data.columns and 'Fecha-I' in data.columns:
-            data['min_diff'] = data.apply(self._get_min_diff, axis=1)
-            data['delay'] = np.where(data['min_diff'] > 15, 1, 0)
-            self._last_target = data[['delay']].copy()
-
         return features
 
     def fit(
@@ -92,16 +89,7 @@ class DelayModel:
         """
 
         y = target.values.ravel()
-        n_y0 = int((y == 0).sum())
-        n_y1 = int((y == 1).sum())
-
-        total = len(y)
-        class_weight = {
-            0: n_y1 / total if total > 0 else 1.0,
-            1: n_y0 / total if total > 0 else 1.0
-        }
-
-        self._model = LogisticRegression(class_weight=class_weight)
+        self._model = LogisticRegression(class_weight="balanced")
         self._model.fit(features, y)
 
     def predict(
@@ -119,13 +107,7 @@ class DelayModel:
         """
 
         if self._model is None:
-            if getattr(self, '_last_target', None) is not None and getattr(self, '_last_features', None) is not None:
-                if len(self._last_target) == self._last_features.shape[0] and self._last_features.shape[1] == features.shape[1]:
-                    self.fit(features=self._last_features, target=self._last_target)
-                else:
-                    raise ValueError("El modelo no ha sido entrenado aun.")
-            else:
-                raise ValueError("El modelo no ha sido entrenado aun.")
+            raise ValueError("El modelo no ha sido entrenado aun.")
 
         predictions = self._model.predict(features)
         return predictions.tolist()

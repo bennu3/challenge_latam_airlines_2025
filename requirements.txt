@@ -4,3 +4,5 @@ uvicorn~=0.15.0
 numpy~=1.26.4
 pandas~=1.3.5
 scikit-learn~=1.3.0
+# FastAPI 0.86/Starlette 0.20 expect anyio v3 where start_blocking_portal lives at top level
+anyio>=3.6,<4
