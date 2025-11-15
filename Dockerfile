@@ -15,6 +15,7 @@ COPY requirements.txt requirements.txt
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
 COPY challenge challenge
+COPY data data
 
 EXPOSE 8080
 
