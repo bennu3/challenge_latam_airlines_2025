@@ -38,9 +38,9 @@ class DelayService:
                 features, target = self._model.preprocess(data, target_column="delay")
                 self._model.fit(features, target)
                 self._is_trained = True
-                self.logger.info("Delay model entrenado")
-            except:
-                self.logger.exception("Error al entrenar el modelo Delay")
+                self.logger.info("Delay model trained successfully")
+            except Exception:
+                self.logger.exception("Failed to train delay model")
                 raise
         return self._model
 
@@ -84,13 +84,13 @@ class Flight(BaseModel):
     @validator("MES")
     def validate_mes(cls, number):
         if number < 1 or number > 12:
-            raise ValueError("MES debe ser entre 1 y 12")
+            raise ValueError("'MES' must be between 1 and 12")
         return number
 
     @validator("TIPOVUELO")
     def validate_tipovuelo(cls, type):
         if type not in ["N", "I"]:
-            raise ValueError("TIPOVUELO debe ser N o I")
+            raise ValueError("'TIPOVUELO' must be either N or I")
         return type
 
     @validator("OPERA")
@@ -122,7 +122,7 @@ class Flight(BaseModel):
         ]
         if operator not in valid_airlines:
             raise ValueError(
-                f"OPERA debe ser alguno de los siguientes {','.join(valid_airlines)}"
+                f"'OPERA' must be one of: {', '.join(valid_airlines)}"
             )
         return operator
 
@@ -133,7 +133,7 @@ class FlightRequest(BaseModel):
     @validator("flights")
     def validate_flights(cls, flights):
         if not flights:
-            raise ValueError("Debe proporcionar al menos un vuelo")
+            raise ValueError("You must provide at least one flight")
         return flights
 
 
@@ -159,13 +159,13 @@ async def post_predict(
     request: FlightRequest, http_request: Request
 ) -> PredictionResponse:
     """
-    Predecir delays para una lista de vuelos.
+    Predict delays for a batch of flights.
 
     Args:
-        request: FlightRequest con lista de vuelos
+        request: FlightRequest containing the flights list.
 
     Returns:
-        PredictionResponse con lista de predicciones
+        PredictionResponse with the predicted values.
     """
 
     try:
