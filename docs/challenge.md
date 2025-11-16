@@ -64,10 +64,32 @@ Con métricas similares, se adoptó Logistic Regression con `class_weight="balan
 ## Dockerfile y despliegue en GCP
 
 1. **Dockerfile**  
-   - Basado en `python:3.12-slim`, solamente instala `requirements.txt`, copia el paquete `challenge` y expone Uvicorn en `0.0.0.0:8080`.
+   - Basado en `python:3.12-slim`, instala únicamente `requirements.txt`, copia tanto `challenge/` como `data/` (para empaquetar `data.csv`) y expone Uvicorn en `0.0.0.0:8080`.
 2. **Cloud Run**  
-   - Servicio productivo: `challenge-api` en región configurada.  
-   - La URL resultante se replica en el `Makefile` para `make stress-test`.g
+   - Servicio productivo: `challenge-api` en `us-central1` (`https://challenge-api-237623245371.us-central1.run.app`).  
+   - El mismo endpoint quedó parametrizado en el `Makefile` (`STRESS_URL`) para ejecutar `make stress-test` contra la instancia pública.
 3. **Seguridad**  
    - Se usa Artifact Registry como repositorio de imágenes y Workload Identity Federation (pool `github-pool`, provider `github-provider`) para evitar claves JSON en CD.
 
+## CI/CD
+
+**CI (`.github/workflows/ci.yml`)**
+- **Triggers:** push a `feat/**` y PR hacia `develop`.
+- **Cache pip:** `actions/setup-python@v5` con `cache: pip` y los tres `requirements*.txt`.
+- **Install dependencies:** `pip install -r requirements.txt -r requirements-test.txt -r requirements-dev.txt`.
+- **Lint with ruff:** `ruff check .`.
+- **Run model tests:** `make model-test`.
+- **Run API tests:** `make api-test`.
+
+**CD (`.github/workflows/cd.yml`)**
+- **Trigger:** push a `main`.
+- **Authenticate:** Workload Identity Federation (`google-github-actions/auth@v2`) con `GCP_WORKLOAD_IDENTITY_PROVIDER` y `GCP_SERVICE_ACCOUNT`.
+- **Configure Docker auth:** `gcloud auth configure-docker`.
+- **Cloud Build:** `gcloud builds submit --async` + polling con `gcloud builds describe` hasta estado `SUCCESS`.
+- **Deploy:** `gcloud run deploy challenge-api`.
+- **Secretos adicionales:** `GCP_PROJECT_ID`, `GCP_REGION`, `GCP_RUN_SERVICE`, `GCP_ARTIFACT_REPO`.
+
+## Stress Test
+
+-  **URL:** `STRESS_URL=https://challenge-api-237623245371.us-central1.run.app`.  
+- **Resultado:** 6.671 requests `POST /predict` con 0 fallas. Latencia media 271 ms (p95 ≈ 400 ms, p99 ≈ 500 ms). Reporte HTML: `reports/stress-test.html`.
