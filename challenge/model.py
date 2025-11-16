@@ -66,7 +66,7 @@ class DelayModel:
             else:
                 if "Fecha-O" not in data.columns or "Fecha-I" not in data.columns:
                     raise ValueError(
-                        "Se requieren columnas Fecha-O y Fecha-I para calcular el target"
+                        "Columns 'Fecha-O' and 'Fecha-I' are required to compute the target"
                     )
                 data["min_diff"] = data.apply(self._get_min_diff, axis=1)
                 data[target_column] = np.where(data["min_diff"] > 15, 1, 0)
@@ -99,7 +99,7 @@ class DelayModel:
         """
 
         if self._model is None:
-            raise ValueError("El modelo no ha sido entrenado aun.")
+            raise ValueError("Model has not been trained yet.")
 
         predictions = self._model.predict(features)
         return predictions.tolist()
