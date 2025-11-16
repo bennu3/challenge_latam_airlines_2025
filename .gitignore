@@ -97,3 +97,7 @@ ehthumbs_vista.db
 *.log.*
 *.sql
 *.sqlite3
+# Reportes generados por pruebas/stress
+reports/
+# Ignore generated credentials from google-github-actions/auth
+gha-creds-*.json
